@@ -60,6 +60,30 @@ app.get('/customers/all', async (req, res) => {
   }
 })
 
+app.get('/movieDescription/:id', async (req, res) => {
+  try{
+    const {id} = req.params
+    const [rows] = await db.query('select FC.film_id, F.title, F.description, F.release_year, F.rating, C.name from film_category as FC, film as F, category as C where FC.film_id = ? and      FC.film_id = F.film_id and C.category_id = FC.category_id;', [id])
+
+    res.json(rows)
+  } catch (error){
+    console.log("Error fetching Movie Description")
+    res.status(500).json({message:'Server Error'})
+  }
+})
+
+app.get('/actorDescription/:id', async (req, res) => {
+  try {
+    const {id} = req.params
+    const [rows] = await db.query('select FA.film_id, F.title, count(R.inventory_id) as rental_count from film_actor as FA, film as F, rental as R, inventory as I where FA.actor_id = ? and FA.film_id = F.film_id and FA.film_id = I.film_id and I.inventory_id = R.inventory_id group by FA.film_id order by rental_count desc limit 5;', [id])
+
+    res.json(rows)
+  } catch (error){
+    console.log("Error fetching Actor description")
+    res.status(500).json({message:"Server Error"})
+  }
+})
+
 app.listen(port, () => {
   console.log(`Backend Server running at http://localhost:${port}`)
 })
