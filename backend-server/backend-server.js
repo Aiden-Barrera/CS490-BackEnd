@@ -84,6 +84,25 @@ app.get('/actorDescription/:id', async (req, res) => {
   }
 })
 
+app.post('/customers/add', async (req, res) => {
+  try {
+    const { first_name, last_name, email, phone, address, district, postal_code } = req.body
+    const [customerAddress] = await db.query(`insert into address (address, district, city_id, phone, postal_code, location) 
+      values (?, ?, (select city_id from city order by rand() limit 1), ?, ?, ST_GeomFromText('POINT(10 20)'));`, [address, district, phone, postal_code])
+
+    const address_id = customerAddress.insertId
+
+    const [customerInfo] = await db.query(`insert into customer (first_name, last_name, email, address_id, store_id) 
+      values (?, ?, ?, ?, (select store_id from store order by rand() limit 1));`, [first_name, last_name, email, address_id])
+
+    res.json({ message: "Customer Successfully Added" })
+
+  } catch (error){
+    console.log('Error adding new customer')
+    res.status(500).json({message: "Serer Error"})
+  }
+})
+
 app.listen(port, () => {
   console.log(`Backend Server running at http://localhost:${port}`)
 })
