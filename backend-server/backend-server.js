@@ -103,6 +103,18 @@ app.post('/customers/add', async (req, res) => {
   }
 })
 
+app.get('/movies/all', async (req, res) => {
+  try {
+    const [rows] = await db.query(`select FC.film_id, F.title, A.first_name, A.last_name, C.name from film_category as FC, film as F, category as C, film_actor as FA, actor as A 
+      where FC.film_id = F.film_id and FA.film_id = FC.film_id and FA.actor_id = A.actor_id and C.category_id = FC.category_id;`)
+
+    res.json(rows)
+  } catch (error) {
+    console.log('Error getting all films')
+    res.status(500).json({message: "Server Error"})
+  }
+})
+
 app.listen(port, () => {
   console.log(`Backend Server running at http://localhost:${port}`)
 })
