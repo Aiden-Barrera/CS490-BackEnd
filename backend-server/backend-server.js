@@ -63,7 +63,7 @@ app.get('/customers/all', async (req, res) => {
 app.get('/movieDescription/:id', async (req, res) => {
   try{
     const {id} = req.params
-    const [rows] = await db.query('select FC.film_id, F.title, F.description, F.release_year, F.rating, C.name from film_category as FC, film as F, category as C where FC.film_id = ? and      FC.film_id = F.film_id and C.category_id = FC.category_id;', [id])
+    const [rows] = await db.query('select FC.film_id, F.title, F.description, F.release_year, F.rating, C.name, F.special_features from film_category as FC, film as F, category as C where FC.film_id = ? and      FC.film_id = F.film_id and C.category_id = FC.category_id;', [id])
 
     res.json(rows)
   } catch (error){
@@ -112,6 +112,19 @@ app.get('/movies/all', async (req, res) => {
   } catch (error) {
     console.log('Error getting all films')
     res.status(500).json({message: "Server Error"})
+  }
+})
+
+app.get('/movies/copies/:id', async (req, res) => {
+  try {
+    const {id} = req.params
+    const [rows] = await db.query(`select F.film_id, count(I.inventory_id) as copies from inventory as I, film as F where I.film_id = F.film_id and F.film_id = ? 
+      group by F.film_id;`, [id])
+
+    res.json(rows)
+  } catch (error) {
+    console.log('Error getting film copies')
+    res.status(500).json({message: 'Server Error'})
   }
 })
 
