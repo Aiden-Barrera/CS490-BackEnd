@@ -51,7 +51,7 @@ app.get('/movies/top5Actors', async (req, res) => {
 
 app.get('/customers/all', async (req, res) => {
   try {
-    const [rows] = await db.query('select customer_id, first_name, last_name, email from customer')
+    const [rows] = await db.query('select C.customer_id, C.first_name, C.last_name, C.email, A.phone, A.address, A.district, A.postal_code from customer as C, address as A where C.address_id = A.address_id')
 
     res.json(rows)
   } catch (error){
