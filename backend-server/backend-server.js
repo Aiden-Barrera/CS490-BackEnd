@@ -105,8 +105,7 @@ app.post('/customers/add', async (req, res) => {
 
 app.get('/movies/all', async (req, res) => {
   try {
-    const [rows] = await db.query(`select FC.film_id, F.title, A.first_name, A.last_name, C.name from film_category as FC, film as F, category as C, film_actor as FA, actor as A 
-      where FC.film_id = F.film_id and FA.film_id = FC.film_id and FA.actor_id = A.actor_id and C.category_id = FC.category_id;`)
+    const [rows] = await db.query(`select FC.film_id, F.title, A.first_name, A.last_name, C.name, F.release_year, F.rating from film_category as FC, film as F, category as C, film_actor       as FA, actor as A where FC.film_id = F.film_id and FA.film_id = FC.film_id and FA.actor_id = A.actor_id and C.category_id = FC.category_id;`)
 
     res.json(rows)
   } catch (error) {
@@ -118,13 +117,24 @@ app.get('/movies/all', async (req, res) => {
 app.get('/movies/copies/:id', async (req, res) => {
   try {
     const {id} = req.params
-    const [rows] = await db.query(`select F.film_id, count(I.inventory_id) as copies from inventory as I, film as F where I.film_id = F.film_id and F.film_id = ? 
+    const [rows] = await db.query(`select count(I.inventory_id) as copies from inventory as I, film as F where I.film_id = F.film_id and F.film_id = ? 
       group by F.film_id;`, [id])
 
     res.json(rows)
   } catch (error) {
     console.log('Error getting film copies')
     res.status(500).json({message: 'Server Error'})
+  }
+})
+
+app.get('/customers/validate/:id', async (req, res) => {
+  try {
+    const {id} = req.params
+    const [rows] = await db.query('select customer_id from customer where customer_id = ?', [id])
+
+    res.json(rows)
+  } catch (error) {
+    console.log('Error getting customer_id')
   }
 })
 
