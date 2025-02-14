@@ -138,6 +138,18 @@ app.get('/customers/validate/:id', async (req, res) => {
   }
 })
 
+app.get('/customers/info/:id', async (req, res) => {
+  try{
+    const {id} = req.params
+    const [rows] = await db.query(`select C.customer_id, C.first_name, C.last_name, F.title, R.rental_date, R.return_date from customer as C, payment as P, rental as R, inventory as I, Film as F where C.customer_id = ? and C.customer_id = P.customer_id and P.rental_id = R.rental_id and R.inventory_id = I.inventory_id and I.film_id = F.film_id;`, [id])
+
+    res.json(rows)
+  } catch (error){
+    console.log('Error getting customer info')
+    res.status(500).json({message: "Server error"})
+  }
+})
+
 app.listen(port, () => {
   console.log(`Backend Server running at http://localhost:${port}`)
 })
