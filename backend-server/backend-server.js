@@ -51,7 +51,7 @@ app.get('/movies/top5Actors', async (req, res) => {
 
 app.get('/customers/all', async (req, res) => {
   try {
-    const [rows] = await db.query('select C.customer_id, C.first_name, C.last_name, C.email, A.phone, A.address, A.district, A.postal_code from customer as C, address as A where C.address_id = A.address_id')
+    const [rows] = await db.query('select C.customer_id, C.first_name, C.last_name, C.email, A.phone, A.address, A.district, A.postal_code, C.create_date from customer as C, address as A where C.address_id = A.address_id')
 
     res.json(rows)
   } catch (error){
@@ -139,9 +139,22 @@ app.get('/customers/validate/:id', async (req, res) => {
 })
 
 app.get('/customers/info/:id', async (req, res) => {
+  try {
+    const {id} = req.params
+    const [rows] = await db.query('select C.customer_id, C.first_name, C.last_name, C.email, A.phone, A.address, A.district, A.postal_code, C.create_date from customer as C, address as A      where C.address_id = A.address_id and C.customer_id = ?', [id])
+
+    res.json(rows)
+  } catch (error){
+    console.log("Error fetching all customers")
+    res.status(500).json({message:'Server error'})
+  }
+
+})
+
+app.get('/customers/info/rentHistory/:id', async (req, res) => {
   try{
     const {id} = req.params
-    const [rows] = await db.query(`select C.customer_id, C.first_name, C.last_name, F.title, R.rental_date, R.return_date from customer as C, payment as P, rental as R, inventory as I, Film as F where C.customer_id = ? and C.customer_id = P.customer_id and P.rental_id = R.rental_id and R.inventory_id = I.inventory_id and I.film_id = F.film_id;`, [id])
+    const [rows] = await db.query(`select R.rental_id, C.customer_id, C.first_name, C.last_name, F.title, R.rental_date, R.return_date from customer as C, payment as P, rental as R, inventory as I, Film as F where C.customer_id = ? and C.customer_id = P.customer_id and P.rental_id = R.rental_id and R.inventory_id = I.inventory_id and I.film_id = F.film_id;`, [id])
 
     res.json(rows)
   } catch (error){
