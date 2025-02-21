@@ -117,8 +117,7 @@ app.get('/movies/all', async (req, res) => {
 app.get('/movies/copies/:id', async (req, res) => {
   try {
     const {id} = req.params
-    const [rows] = await db.query(`select count(I.inventory_id) as copies from inventory as I, film as F where I.film_id = F.film_id and F.film_id = ? 
-      group by F.film_id;`, [id])
+    const [rows] = await db.query(`select count(I.inventory_id) as copies from inventory as I, film as F where I.film_id = F.film_id and F.film_id = ? and I.inventory_id not in (select inventory_id from rental where return_date is NULL) group by F.film_id`, [id])
 
     res.json(rows)
   } catch (error) {
@@ -138,6 +137,50 @@ app.get('/customers/validate/:id', async (req, res) => {
   }
 })
 
+app.get('/customers/rent/:filmId/:customerID', async (req, res) => {
+  try{
+    const {filmId, customerID} = req.params 
+    const [inventory] = await db.query(`select inventory_id from inventory where film_id = ? and inventory_id not in (select inventory_id from rental where
+      return_date is NULL) limit 1`, [filmId])
+
+    if (inventory.length === 0){
+      return res.status(500).json({message: "No existing Copies to Rent"})
+    }
+
+    const inventory_id = inventory[0].inventory_id
+
+    const [staff] = await db.query('select staff_id from staff order by rand() limit 1')
+    const staff_id = staff[0].staff_id
+
+    await db.query(`insert into rental (rental_date, customer_id, inventory_id, staff_id, return_date) values (now(), ?, ?, ?, NULL)`, 
+      [customerID, inventory_id, staff_id]) 
+
+    res.status(200).json({message: `Customer: ${customerID} rented film: ${filmId} at iventory: ${inventory_id}`})
+  } catch (error) {
+    console.log('Error getting customer_id')
+    res.status(404).json({message: "Error trying to Rent Movie"})
+  }
+})
+
+app.post('/customers/return', async (req, res) => {
+  try{
+    const {inventory_id} = req.body
+
+    const [rental] = await db.query('select rental_id from rental where inventory_id = ? and return_date is NULL', [inventory_id])
+
+    if (rental.length === 0){
+      return res.status(500).json({message: "No Copy to Return"})
+    }
+
+    await db.query('update rental set return_date = now() where rental_id = ?', [rental[0].rental_id])
+
+    res.json({message: "Successfull Returned Film"})
+  } catch (error) {
+    console.log("Error Returning Copy")
+    res.status(404).json({message: "Error trying to Return Copy"})
+  }
+})
+
 app.get('/customers/info/:id', async (req, res) => {
   try {
     const {id} = req.params
@@ -148,13 +191,12 @@ app.get('/customers/info/:id', async (req, res) => {
     console.log("Error fetching all customers")
     res.status(500).json({message:'Server error'})
   }
-
 })
 
 app.get('/customers/info/rentHistory/:id', async (req, res) => {
   try{
     const {id} = req.params
-    const [rows] = await db.query(`select R.rental_id, C.customer_id, C.first_name, C.last_name, F.title, R.rental_date, R.return_date from customer as C, payment as P, rental as R, inventory as I, Film as F where C.customer_id = ? and C.customer_id = P.customer_id and P.rental_id = R.rental_id and R.inventory_id = I.inventory_id and I.film_id = F.film_id;`, [id])
+    const [rows] = await db.query(`select R.rental_id, C.customer_id, C.first_name, C.last_name, F.title, R.rental_date, R.return_date, F.film_id, I.inventory_id from customer as C, rental as R, inventory as I, Film as F where C.customer_id = ? and C.customer_id = R.customer_id and R.inventory_id = I.inventory_id and I.film_id = F.film_id;`, [id])
 
     res.json(rows)
   } catch (error){
